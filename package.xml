@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>bag2images</name>
+  <name>bag_to_images</name>
   <version>0.0.1</version>
-  <description>bag2images</description>
+  <description>bag_to_images</description>
 
   <maintainer email="simon.lynen@mavt.ethz.ch">Simon Lynen</maintainer>
   <license>New BSD</license>
