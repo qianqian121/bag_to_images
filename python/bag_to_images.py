@@ -1,16 +1,30 @@
 #!/usr/bin/python
 
+# Extract images from a bag file.
+#
+# Original author: Thomas Denewiler (http://answers.ros.org/users/304/thomas-d/)
+
+# Start up ROS pieces.
 PKG = 'bag_to_images'
 import roslib; roslib.load_manifest(PKG)
 import rosbag
 import rospy
-import cv
+import cv2
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
+
+# Reading bag filename from command line or roslaunch parameter.
 import os
 import sys
 
 class ImageCreator():
+
+    image_type = ".jpg"
+    desired_topic = "image_raw"
+    index_in_filename = True
+    index_format = "06d"
+    image_index = 0
+
     # Must have __init__(self) function for a class, similar to a C++ class constructor.
     def __init__(self):
         # Get parameters when starting node from a launch file.
@@ -30,24 +44,20 @@ class ImageCreator():
         # Open bag file.
         with rosbag.Bag(filename, 'r') as bag:
             for topic, msg, t in bag.read_messages():
-                if topic == "/cam0/image_raw":
+                topic_parts = topic.split('/')
+                # first part is empty string
+                if len(topic_parts) == 3 and topic_parts[2] == self.desired_topic:
                     try:
-                        cv_image = self.bridge.imgmsg_to_cv(msg, "bgr8")
+                        cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
                     except CvBridgeError, e:
                         print e
-                    timestr = "%.6f" % msg.header.stamp.to_sec()
-                    #image_name = str(save_dir)+"/cam0_"+timestr+".pgm"
-                    image_name = str(save_dir)+"/"+timestr+"_cam0"+".pgm"
-                    cv.SaveImage(image_name, cv_image)
-                if topic == "/cam1/image_raw":
-                    try:
-                        cv_image = self.bridge.imgmsg_to_cv(msg, "bgr8")
-                    except CvBridgeError, e:
-                        print e
-                    timestr = "%.6f" % msg.header.stamp.to_sec()
-                    #image_name = str(save_dir)+"/cam1_"+timestr+".pgm"
-                    image_name = str(save_dir)+"/"+timestr+"_cam1"+".pgm"
-                    cv.SaveImage(image_name, cv_image)
+                    timestr = "%.3f" % msg.header.stamp.to_sec()
+                    if self.index_in_filename:
+                        image_name = str(save_dir) + "/" + topic_parts[1] + "-" + format(self.image_index, self.index_format) + "-" + timestr + self.image_type
+                    else:
+                        image_name = str(save_dir) + "/" + topic_parts[1] + "-" + timestr + self.image_type
+                    cv2.imwrite(image_name, cv_image)
+                    self.image_index = self.image_index + 1
 
 # Main function.    
 if __name__ == '__main__':
